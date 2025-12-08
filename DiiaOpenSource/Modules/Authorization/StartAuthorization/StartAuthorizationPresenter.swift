@@ -37,7 +37,7 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
         // Проверяем статус сервера
         Task {
             let isServerOnline = await networkManager.checkServerHealth()
-            await MainActor.run {
+            Task { @MainActor in
                 view.setServerStatus(isServerOnline)
             }
         }
@@ -60,7 +60,7 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
         Task {
             let result = await networkManager.login(username: username, password: password)
             
-            await MainActor.run {
+            Task { @MainActor in
                 isLoading = false
                 view.setLoadingState(.ready)
                 
@@ -101,7 +101,7 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
                         // Загружаем фото пользователя
                         Task {
                             if let photoData = await networkManager.downloadUserPhoto(userId: userData.id) {
-                                await MainActor.run {
+                                Task { @MainActor in
                                     UserDefaults.standard.set(photoData, forKey: "userPhoto")
                                 }
                             }
@@ -112,18 +112,12 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
                         _ = StaticDataGenerator.shared.getResidenceAddress()
                         
                         // Переходим к созданию PIN-кода
-                        await MainActor.run {
-                            self.createPincode()
-                        }
+                        self.createPincode()
                     } else {
-                        await MainActor.run {
-                            self.view.showError(message: "Помилка отримання даних користувача")
-                        }
+                        self.view.showError(message: "Помилка отримання даних користувача")
                     }
                 } else {
-                    await MainActor.run {
-                        self.view.showError(message: result.message)
-                    }
+                    self.view.showError(message: result.message)
                 }
             }
         }
