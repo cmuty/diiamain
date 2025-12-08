@@ -41,7 +41,8 @@ class AnimatedGradientBackgroundView: UIView {
     }
     
     private func setupGradient() {
-        gradientLayer.frame = bounds
+        // Не устанавливаем frame здесь, так как bounds может быть нулевым при инициализации
+        // Frame будет установлен в layoutSubviews
         gradientLayer.colors = colorSets[0].map { $0.cgColor }
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint = CGPoint(x: 1, y: 1)
@@ -50,27 +51,25 @@ class AnimatedGradientBackgroundView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        gradientLayer.frame = bounds
+        // Обновляем frame градиента при изменении размера view
+        if !bounds.isEmpty {
+            gradientLayer.frame = bounds
+        }
     }
     
     private func startAnimation() {
         timer?.invalidate()
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] timer in
-                guard let self = self else {
-                    timer.invalidate()
-                    return
-                }
-                DispatchQueue.main.async {
-                    self.colorIndex = (self.colorIndex + 1) % self.colorSets.count
-                    
-                    CATransaction.begin()
-                    CATransaction.setAnimationDuration(2.5)
-                    CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
-                    self.gradientLayer.colors = self.colorSets[self.colorIndex].map { $0.cgColor }
-                    CATransaction.commit()
-                }
+            self.timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+                guard let self = self else { return }
+                self.colorIndex = (self.colorIndex + 1) % self.colorSets.count
+                
+                CATransaction.begin()
+                CATransaction.setAnimationDuration(2.5)
+                CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
+                self.gradientLayer.colors = self.colorSets[self.colorIndex].map { $0.cgColor }
+                CATransaction.commit()
             }
             if let timer = self.timer {
                 RunLoop.current.add(timer, forMode: .common)
