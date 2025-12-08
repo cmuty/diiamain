@@ -1,7 +1,7 @@
 workflows:
   ios-diia-opensource-workflow:
     name: Diia OpenSource iOS Build
-    max_build_duration: 900
+    max_build_duration: 120
     instance_type: mac_mini_m1
     environment:
       vars:
