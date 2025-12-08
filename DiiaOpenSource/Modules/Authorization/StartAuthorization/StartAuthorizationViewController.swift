@@ -18,29 +18,29 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
     @IBOutlet private weak var contentView: UIView!
     @IBOutlet private weak var scrollView: UIScrollView!
     
-    @IBOutlet private weak var titleLabel: UILabel!
-    @IBOutlet private weak var appVersion: UILabel!
-    @IBOutlet private weak var authInfoLabel: UILabel!
-    @IBOutlet private weak var readPleaseLabel: UILabel!
-    @IBOutlet private weak var personalDataLabel: UILabel!
-    @IBOutlet private weak var checkmarksView: BorderedCheckmarksView!
-    @IBOutlet private weak var authMethodsListView: DSWhiteColoredListView!
-    
-    // Login/Password fields
-    private var usernameTextField: UITextField!
-    private var passwordTextField: UITextField!
-    private var loginButton: UIButton!
-    private var serverStatusLabel: UILabel!
-    private var showPasswordButton: UIButton!
-    
     // MARK: - Properties
     var presenter: StartAuthorizationAction!
+    
+    // UI Elements
+    private var backgroundGradientView: AnimatedGradientBackgroundView!
+    private var mainStackView: UIStackView!
+    private var usernameTextField: UITextField!
+    private var passwordTextField: UITextField!
+    private var showPasswordButton: UIButton!
+    private var loginButton: UIButton!
+    private var serverStatusStackView: UIStackView!
+    private var serverStatusIndicator: UIView!
+    private var serverStatusLabel: UILabel!
+    private var forgotPasswordButton: UIButton!
+    private var registrationStackView: UIStackView!
+    private var registrationButton: UIButton!
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        initialSetup()
+        setupBackground()
+        setupUI()
         presenter.configureView()
     }
     
@@ -50,56 +50,167 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
     }
     
     // MARK: - Private Methods
-    private func initialSetup() {
-        setupFonts()
-        setupTexts()
-        setupRecognizers()
-        setupAccessibility()
-        setupLoginFields()
-        scrollView.delegate = self
+    private func setupBackground() {
+        backgroundGradientView = AnimatedGradientBackgroundView()
+        backgroundGradientView.translatesAutoresizingMaskIntoConstraints = false
+        view.insertSubview(backgroundGradientView, at: 0)
+        
+        NSLayoutConstraint.activate([
+            backgroundGradientView.topAnchor.constraint(equalTo: view.topAnchor),
+            backgroundGradientView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            backgroundGradientView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            backgroundGradientView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
     }
     
-    private func setupLoginFields() {
-        // Создаем поля для логина и пароля программно
-        let stackView = UIStackView()
-        stackView.axis = .vertical
-        stackView.spacing = 16
-        stackView.translatesAutoresizingMaskIntoConstraints = false
+    private func setupUI() {
+        // Main scroll view content
+        let scrollContentView = UIView()
+        scrollContentView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(scrollContentView)
+        
+        // Main stack view
+        mainStackView = UIStackView()
+        mainStackView.axis = .vertical
+        mainStackView.spacing = 24
+        mainStackView.alignment = .leading
+        mainStackView.translatesAutoresizingMaskIntoConstraints = false
+        scrollContentView.addSubview(mainStackView)
+        
+        // Title
+        let titleLabel = UILabel()
+        titleLabel.text = "Вітаємо в Дія 👋"
+        titleLabel.font = UIFont.systemFont(ofSize: 30, weight: .regular)
+        titleLabel.textColor = .black
+        mainStackView.addArrangedSubview(titleLabel)
         
         // Username field
-        let usernameLabel = UILabel()
-        usernameLabel.text = "Логін"
-        usernameLabel.font = FontBook.usualFont
-        usernameLabel.textColor = .black
-        
-        usernameTextField = UITextField()
-        usernameTextField.placeholder = "Ваш логін"
-        usernameTextField.borderStyle = .roundedRect
-        usernameTextField.backgroundColor = UIColor.white.withAlphaComponent(0.7)
-        usernameTextField.autocapitalizationType = .none
-        usernameTextField.autocorrectionType = .no
-        usernameTextField.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        let usernameContainer = createTextFieldContainer(
+            label: "Логін",
+            placeholder: "Ваш логін",
+            textField: &usernameTextField
+        )
+        mainStackView.addArrangedSubview(usernameContainer)
         
         // Password field
-        let passwordLabel = UILabel()
-        passwordLabel.text = "Пароль"
-        passwordLabel.font = FontBook.usualFont
-        passwordLabel.textColor = .black
+        let passwordContainer = createPasswordFieldContainer()
+        mainStackView.addArrangedSubview(passwordContainer)
+        
+        // Forgot password button
+        forgotPasswordButton = UIButton(type: .system)
+        forgotPasswordButton.setTitle("Забули пароль?", for: .normal)
+        forgotPasswordButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        forgotPasswordButton.setTitleColor(.black, for: .normal)
+        forgotPasswordButton.addTarget(self, action: #selector(forgotPasswordTapped), for: .touchUpInside)
+        mainStackView.addArrangedSubview(forgotPasswordButton)
+        
+        // Server status
+        serverStatusStackView = createServerStatusView()
+        mainStackView.addArrangedSubview(serverStatusStackView)
+        
+        // Login button
+        loginButton = UIButton(type: .system)
+        loginButton.setTitle("Увійти", for: .normal)
+        loginButton.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .regular)
+        loginButton.setTitleColor(.white, for: .normal)
+        loginButton.backgroundColor = .black
+        loginButton.layer.cornerRadius = 16
+        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
+        loginButton.translatesAutoresizingMaskIntoConstraints = false
+        loginButton.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        mainStackView.addArrangedSubview(loginButton)
+        
+        // Spacer
+        let spacer = UIView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.heightAnchor.constraint(equalToConstant: 100).isActive = true
+        mainStackView.addArrangedSubview(spacer)
+        
+        // Registration section
+        registrationStackView = createRegistrationSection()
+        mainStackView.addArrangedSubview(registrationStackView)
+        
+        // Constraints
+        NSLayoutConstraint.activate([
+            scrollContentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            scrollContentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            scrollContentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            scrollContentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            scrollContentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            
+            mainStackView.topAnchor.constraint(equalTo: scrollContentView.topAnchor, constant: 64),
+            mainStackView.leadingAnchor.constraint(equalTo: scrollContentView.leadingAnchor, constant: 24),
+            mainStackView.trailingAnchor.constraint(equalTo: scrollContentView.trailingAnchor, constant: -24),
+            mainStackView.bottomAnchor.constraint(equalTo: scrollContentView.bottomAnchor, constant: -32)
+        ])
+        
+        // Hide old content
+        contentView?.isHidden = true
+    }
+    
+    private func createTextFieldContainer(label: String, placeholder: String, textField: inout UITextField?) -> UIStackView {
+        let container = UIStackView()
+        container.axis = .vertical
+        container.spacing = 8
+        container.alignment = .leading
+        
+        let labelView = UILabel()
+        labelView.text = label
+        labelView.font = UIFont.systemFont(ofSize: 18, weight: .regular)
+        labelView.textColor = .black
+        
+        textField = UITextField()
+        textField?.placeholder = placeholder
+        textField?.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+        textField?.autocapitalizationType = .none
+        textField?.autocorrectionType = .no
+        textField?.backgroundColor = UIColor.white.withAlphaComponent(0.7)
+        textField?.layer.cornerRadius = 16
+        textField?.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
+        textField?.leftViewMode = .always
+        textField?.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
+        textField?.rightViewMode = .always
+        textField?.translatesAutoresizingMaskIntoConstraints = false
+        textField?.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        
+        container.addArrangedSubview(labelView)
+        if let textField = textField {
+            container.addArrangedSubview(textField)
+        }
+        
+        return container
+    }
+    
+    private func createPasswordFieldContainer() -> UIStackView {
+        let container = UIStackView()
+        container.axis = .vertical
+        container.spacing = 8
+        container.alignment = .leading
+        
+        let label = UILabel()
+        label.text = "Пароль"
+        label.font = UIFont.systemFont(ofSize: 18, weight: .regular)
+        label.textColor = .black
         
         let passwordContainer = UIView()
         passwordContainer.translatesAutoresizingMaskIntoConstraints = false
         
         passwordTextField = UITextField()
         passwordTextField.placeholder = "Ваш пароль"
-        passwordTextField.borderStyle = .roundedRect
-        passwordTextField.backgroundColor = UIColor.white.withAlphaComponent(0.7)
+        passwordTextField.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         passwordTextField.isSecureTextEntry = true
         passwordTextField.autocapitalizationType = .none
         passwordTextField.autocorrectionType = .no
+        passwordTextField.backgroundColor = UIColor.white.withAlphaComponent(0.7)
+        passwordTextField.layer.cornerRadius = 16
+        passwordTextField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
+        passwordTextField.leftViewMode = .always
         passwordTextField.translatesAutoresizingMaskIntoConstraints = false
+        passwordTextField.heightAnchor.constraint(equalToConstant: 56).isActive = true
         
         showPasswordButton = UIButton(type: .system)
         showPasswordButton.setImage(UIImage(systemName: "eye"), for: .normal)
+        showPasswordButton.tintColor = .gray
         showPasswordButton.addTarget(self, action: #selector(togglePasswordVisibility), for: .touchUpInside)
         showPasswordButton.translatesAutoresizingMaskIntoConstraints = false
         
@@ -112,47 +223,93 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
             passwordTextField.topAnchor.constraint(equalTo: passwordContainer.topAnchor),
             passwordTextField.bottomAnchor.constraint(equalTo: passwordContainer.bottomAnchor),
             passwordTextField.heightAnchor.constraint(equalToConstant: 56),
-            showPasswordButton.trailingAnchor.constraint(equalTo: passwordContainer.trailingAnchor, constant: -8),
+            showPasswordButton.trailingAnchor.constraint(equalTo: passwordContainer.trailingAnchor, constant: -16),
             showPasswordButton.centerYAnchor.constraint(equalTo: passwordContainer.centerYAnchor),
             showPasswordButton.widthAnchor.constraint(equalToConstant: 44),
-            showPasswordButton.heightAnchor.constraint(equalToConstant: 44)
+            showPasswordButton.heightAnchor.constraint(equalToConstant: 44),
+            passwordContainer.heightAnchor.constraint(equalToConstant: 56)
         ])
         
-        // Server status label
+        container.addArrangedSubview(label)
+        container.addArrangedSubview(passwordContainer)
+        
+        return container
+    }
+    
+    private func createServerStatusView() -> UIStackView {
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.spacing = 8
+        stackView.alignment = .center
+        
+        serverStatusIndicator = UIView()
+        serverStatusIndicator.backgroundColor = .orange
+        serverStatusIndicator.layer.cornerRadius = 4
+        serverStatusIndicator.translatesAutoresizingMaskIntoConstraints = false
+        serverStatusIndicator.widthAnchor.constraint(equalToConstant: 8).isActive = true
+        serverStatusIndicator.heightAnchor.constraint(equalToConstant: 8).isActive = true
+        
         serverStatusLabel = UILabel()
-        serverStatusLabel.font = FontBook.usualFont.withSize(12)
+        serverStatusLabel.text = "Offline режим"
+        serverStatusLabel.font = UIFont.systemFont(ofSize: 12, weight: .regular)
         serverStatusLabel.textColor = UIColor.black.withAlphaComponent(0.6)
         
-        // Login button
-        loginButton = UIButton(type: .system)
-        loginButton.setTitle("Увійти", for: .normal)
-        loginButton.titleLabel?.font = FontBook.usualFont.withSize(18)
-        loginButton.setTitleColor(.white, for: .normal)
-        loginButton.backgroundColor = .black
-        loginButton.layer.cornerRadius = 16
-        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
-        loginButton.heightAnchor.constraint(equalToConstant: 56).isActive = true
-        
-        stackView.addArrangedSubview(usernameLabel)
-        stackView.addArrangedSubview(usernameTextField)
-        stackView.addArrangedSubview(passwordLabel)
-        stackView.addArrangedSubview(passwordContainer)
+        stackView.addArrangedSubview(serverStatusIndicator)
         stackView.addArrangedSubview(serverStatusLabel)
-        stackView.addArrangedSubview(loginButton)
         
-        // Добавляем stackView в contentView вместо authMethodsListView
-        if let contentView = contentView {
-            contentView.addSubview(stackView)
-            NSLayoutConstraint.activate([
-                stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
-                stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
-                stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
-                stackView.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -24)
-            ])
-        }
+        return stackView
+    }
+    
+    private func createRegistrationSection() -> UIStackView {
+        let container = UIStackView()
+        container.axis = .vertical
+        container.spacing = 16
+        container.alignment = .fill
         
-        // Скрываем старый список методов авторизации
-        authMethodsListView.isHidden = true
+        let textStack = UIStackView()
+        textStack.axis = .vertical
+        textStack.spacing = 4
+        textStack.alignment = .center
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "Не зареєстровані?"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+        titleLabel.textColor = .black
+        titleLabel.textAlignment = .center
+        
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = "Реєстрація доступна в нашому боті"
+        subtitleLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        subtitleLabel.textColor = .gray
+        subtitleLabel.textAlignment = .center
+        
+        textStack.addArrangedSubview(titleLabel)
+        textStack.addArrangedSubview(subtitleLabel)
+        
+        registrationButton = UIButton(type: .system)
+        registrationButton.setTitle("Перейти до бота", for: .normal)
+        registrationButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+        registrationButton.setTitleColor(.black, for: .normal)
+        registrationButton.backgroundColor = UIColor.white.withAlphaComponent(0.7)
+        registrationButton.layer.cornerRadius = 16
+        registrationButton.addTarget(self, action: #selector(registrationButtonTapped), for: .touchUpInside)
+        registrationButton.translatesAutoresizingMaskIntoConstraints = false
+        registrationButton.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        
+        let arrowImage = UIImageView(image: UIImage(systemName: "arrow.right"))
+        arrowImage.tintColor = .black
+        arrowImage.translatesAutoresizingMaskIntoConstraints = false
+        registrationButton.addSubview(arrowImage)
+        
+        NSLayoutConstraint.activate([
+            arrowImage.trailingAnchor.constraint(equalTo: registrationButton.trailingAnchor, constant: -16),
+            arrowImage.centerYAnchor.constraint(equalTo: registrationButton.centerYAnchor)
+        ])
+        
+        container.addArrangedSubview(textStack)
+        container.addArrangedSubview(registrationButton)
+        
+        return container
     }
     
     @objc private func togglePasswordVisibility() {
@@ -174,76 +331,20 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
         presenter.login(username: username, password: password)
     }
     
-    private func setupFonts() {
-        titleLabel.font = FontBook.numbersHeadingFont
-        appVersion.font = FontBook.usualFont
-        authInfoLabel.font = FontBook.usualFont
-        readPleaseLabel.font = FontBook.usualFont
+    @objc private func forgotPasswordTapped() {
+        if let url = URL(string: "https://t.me/diiatest24bot") {
+            UIApplication.shared.open(url)
+        }
     }
     
-    private func setupTexts() {
-        titleLabel.text = R.Strings.authorization_authorization.localized()
-        appVersion.text = R.Strings.general_app_version.formattedLocalized(arguments: AppConstants.App.appVersion)
-        appVersion.textColor = Constants.appVersionTextColor
-        
-        authInfoLabel.setTextWithCurrentAttributes(
-            text: R.Strings.authorization_info.localized(),
-            lineHeightMultiple: Constants.lineHeightMultiple
-        )
-        readPleaseLabel.setTextWithCurrentAttributes(
-            text: R.Strings.authorization_read_please.localized(),
-            lineHeightMultiple: Constants.lineHeightMultiple
-        )
-        
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineHeightMultiple = Constants.lineHeightMultiple
-        
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: FontBook.usualFont,
-            .foregroundColor: UIColor.black,
-            .underlineStyle: NSUnderlineStyle.single.rawValue,
-            .paragraphStyle: paragraphStyle
-        ]
-        
-        personalDataLabel.attributedText = NSAttributedString(string: R.Strings.authorization_personal_data_message.localized(), attributes: attributes)
-    }
-    
-    private func setupRecognizers() {
-        let personalDataTapRecognizer = UITapGestureRecognizer(target: self, action: #selector(showPersonalDataMessage))
-        personalDataLabel.addGestureRecognizer(personalDataTapRecognizer)
-        personalDataLabel.isUserInteractionEnabled = true
+    @objc private func registrationButtonTapped() {
+        if let url = URL(string: "https://t.me/maijediiabot") {
+            UIApplication.shared.open(url)
+        }
     }
     
     override func canGoBack() -> Bool {
         return false
-    }
-    
-    // MARK: - Actions
-    @objc private func showPersonalDataMessage() {
-        presenter.showPersonalDataProcessing()
-    }
-    
-    // MARK: - Accessibility
-    private func setupAccessibility() {
-        titleLabel.accessibilityIdentifier = Constants.titleComponentId
-        authInfoLabel.accessibilityIdentifier = Constants.textConditionsComponentId
-        checkmarksView.accessibilityIdentifier = Constants.checkboxComponentId
-        authMethodsListView.accessibilityIdentifier = Constants.methodsListComponentId
-        
-        personalDataLabel.accessibilityLabel = R.Strings.auth_accessibility_start_person_data.localized()
-        personalDataLabel.accessibilityTraits = .link
-        
-        checkmarksView.isAccessibilityElement = true
-        checkmarksView.accessibilityTraits = [.button, .selected]
-        checkmarksView.accessibilityLabel = R.Strings.auth_accessibility_start_checkmark.localized()
-        
-        appVersion.isAccessibilityElement = true
-        appVersion.accessibilityTraits = .staticText
-        appVersion.accessibilityLabel = R.Strings.general_app_version.formattedLocalized(arguments: AppConstants.App.appVersion).replacingOccurrences(of: ".", with: " ")
-    }
-    
-    private func updateCheckmarkAccessibility(isChecked: Bool) {
-        checkmarksView.accessibilityTraits = isChecked ? .selected : .notEnabled
     }
 }
 
@@ -251,62 +352,25 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
 extension StartAuthorizationViewController: StartAuthorizationView {
     func setLoadingState(_ state: DiiaUIComponents.LoadingState) {
         loadingView.setLoadingState(state)
-        contentView.isHidden = state == .loading
+        scrollView.isHidden = state == .loading
     }
     
     func setAuthMethods(with viewModel: DSListViewModel) {
-        contentView.isHidden = false
-        authMethodsListView.configure(viewModel: viewModel)
+        // Not used in new design
     }
     
     func setCheckmarks(with viewModel: BorderedCheckmarksViewModel) {
-        checkmarksView.configure(with: viewModel)
+        // Not used in new design
     }
     
     func setAvailability(_ isAvailable: Bool) {
-        updateCheckmarkAccessibility(isChecked: isAvailable)
         loginButton.isEnabled = isAvailable
-        loginButton.alpha = isAvailable ? Constants.activeAlpha : Constants.inactiveAlpha
+        loginButton.alpha = isAvailable ? 1.0 : 0.5
     }
     
     func setServerStatus(_ isOnline: Bool) {
-        guard let serverStatusLabel = serverStatusLabel else { return }
-        
-        let statusColor = isOnline ? UIColor.systemGreen : UIColor.systemOrange
-        let statusView = UIView()
-        statusView.backgroundColor = statusColor
-        statusView.layer.cornerRadius = 4
-        statusView.translatesAutoresizingMaskIntoConstraints = false
-        statusView.widthAnchor.constraint(equalToConstant: 8).isActive = true
-        statusView.heightAnchor.constraint(equalToConstant: 8).isActive = true
-        
+        serverStatusIndicator.backgroundColor = isOnline ? .green : .orange
         serverStatusLabel.text = isOnline ? "Сервер підключено" : "Offline режим"
-        
-        // Если label уже в stackView с индикатором, обновляем только текст
-        if let parentStack = serverStatusLabel.superview as? UIStackView,
-           parentStack.arrangedSubviews.count == 2 {
-            // Обновляем только текст
-            return
-        }
-        
-        // Создаем новый stackView с индикатором и текстом
-        let statusStackView = UIStackView(arrangedSubviews: [statusView, serverStatusLabel])
-        statusStackView.axis = .horizontal
-        statusStackView.spacing = 8
-        statusStackView.alignment = .center
-        
-        // Заменяем label на stackView в родительском view
-        if let parent = serverStatusLabel.superview {
-            parent.addSubview(statusStackView)
-            statusStackView.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                statusStackView.leadingAnchor.constraint(equalTo: serverStatusLabel.leadingAnchor),
-                statusStackView.trailingAnchor.constraint(equalTo: serverStatusLabel.trailingAnchor),
-                statusStackView.topAnchor.constraint(equalTo: serverStatusLabel.topAnchor),
-                statusStackView.bottomAnchor.constraint(equalTo: serverStatusLabel.bottomAnchor)
-            ])
-            serverStatusLabel.removeFromSuperview()
-        }
     }
     
     func showError(message: String) {
@@ -320,20 +384,5 @@ extension StartAuthorizationViewController: StartAuthorizationView {
 extension StartAuthorizationViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         scrollView.isScrollEnabled = scrollView.frame.height <= scrollView.contentSize.height
-    }
-}
-
-// MARK: - Constants
-extension StartAuthorizationViewController {
-    private enum Constants {
-        static let lineHeightMultiple: CGFloat = 1.25
-        static let activeAlpha: CGFloat = 1.0
-        static let inactiveAlpha: CGFloat = 0.2
-        static let appVersionTextColor = UIColor.black.withAlphaComponent(0.5)
-        
-        static let titleComponentId = "title_auth"
-        static let textConditionsComponentId = "text_conditions_auth"
-        static let checkboxComponentId = "checkbox_conditions_bordered_auth"
-        static let methodsListComponentId = "methods_list_auth"
     }
 }

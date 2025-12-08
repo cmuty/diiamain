@@ -237,6 +237,7 @@
 		A1B2C3D62E9D272C00266703 /* StaticDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D52E9D272C00266703 /* StaticDataGenerator.swift */; };
 		A1B2C3D72E9D272C00266704 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D62E9D272C00266704 /* User.swift */; };
 		A1B2C3D92E9D272C00266708 /* UserDataDocumentsAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D82E9D272C00266708 /* UserDataDocumentsAdapter.swift */; };
+		A1B2C3DA2E9D272C00266709 /* AnimatedGradientBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D92E9D272C00266709 /* AnimatedGradientBackgroundView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -455,6 +456,7 @@
 		A1B2C3D52E9D272C00266703 /* StaticDataGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StaticDataGenerator.swift; sourceTree = "<group>"; };
 		A1B2C3D62E9D272C00266704 /* User.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		A1B2C3D82E9D272C00266708 /* UserDataDocumentsAdapter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserDataDocumentsAdapter.swift; sourceTree = "<group>"; };
+		A1B2C3D92E9D272C00266709 /* AnimatedGradientBackgroundView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnimatedGradientBackgroundView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -658,6 +660,7 @@
 				42F9236F29FBF61B0072DDC1 /* TitledTextField.swift */,
 				7BE1994A2B16E310008C9FAC /* DashBorderedView.swift */,
 				7B7693E82B7C85A60007A89F /* BorderedCheckmarksView.swift */,
+				A1B2C3D92E9D272C00266709 /* AnimatedGradientBackgroundView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1813,6 +1816,7 @@
 				A1B2C3D62E9D272C00266703 /* StaticDataGenerator.swift in Sources */,
 				A1B2C3D72E9D272C00266704 /* User.swift in Sources */,
 				A1B2C3D92E9D272C00266708 /* UserDataDocumentsAdapter.swift in Sources */,
+				A1B2C3DA2E9D272C00266709 /* AnimatedGradientBackgroundView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
