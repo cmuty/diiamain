@@ -13,10 +13,17 @@ protocol StartAuthorizationView: BaseView {
 
 final class StartAuthorizationViewController: UIViewController, Storyboarded {
     
-    // MARK: - Outlets
+    // MARK: - Outlets (старые из storyboard, не используются в новом дизайне)
     @IBOutlet private weak var loadingView: ContentLoadingView?
     @IBOutlet private weak var contentView: UIView?
     @IBOutlet private weak var scrollView: UIScrollView?
+    @IBOutlet private weak var appVersion: UILabel?
+    @IBOutlet private weak var authInfoLabel: UILabel?
+    @IBOutlet private weak var authMethodsListView: UIView?
+    @IBOutlet private weak var checkmarksView: UIView?
+    @IBOutlet private weak var personalDataLabel: UILabel?
+    @IBOutlet private weak var readPleaseLabel: UILabel?
+    @IBOutlet private weak var titleLabel: UILabel?
     
     // MARK: - Properties
     var presenter: StartAuthorizationAction!
@@ -80,6 +87,7 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
             ])
         }
         self.mainScrollView.delegate = self
+        self.mainScrollView.showsVerticalScrollIndicator = false
         
         // Main scroll view content
         let scrollContentView = UIView()
@@ -164,6 +172,13 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
         // Hide old content if exists
         contentView?.isHidden = true
         loadingView?.isHidden = true
+        authInfoLabel?.isHidden = true
+        readPleaseLabel?.isHidden = true
+        personalDataLabel?.isHidden = true
+        checkmarksView?.isHidden = true
+        authMethodsListView?.isHidden = true
+        titleLabel?.isHidden = true
+        appVersion?.isHidden = true
     }
     
     private func createTextFieldContainer(label: String, placeholder: String, textField: inout UITextField?) -> UIStackView {

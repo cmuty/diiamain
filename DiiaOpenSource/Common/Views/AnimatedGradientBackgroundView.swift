@@ -55,15 +55,26 @@ class AnimatedGradientBackgroundView: UIView {
     
     private func startAnimation() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.colorIndex = (self.colorIndex + 1) % self.colorSets.count
-            
-            CATransaction.begin()
-            CATransaction.setAnimationDuration(2.5)
-            CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
-            self.gradientLayer.colors = self.colorSets[self.colorIndex].map { $0.cgColor }
-            CATransaction.commit()
+            self.timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] timer in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+                DispatchQueue.main.async {
+                    self.colorIndex = (self.colorIndex + 1) % self.colorSets.count
+                    
+                    CATransaction.begin()
+                    CATransaction.setAnimationDuration(2.5)
+                    CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
+                    self.gradientLayer.colors = self.colorSets[self.colorIndex].map { $0.cgColor }
+                    CATransaction.commit()
+                }
+            }
+            if let timer = self.timer {
+                RunLoop.current.add(timer, forMode: .common)
+            }
         }
     }
     
