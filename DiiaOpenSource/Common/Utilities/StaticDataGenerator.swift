@@ -249,8 +249,15 @@ class StaticDataGenerator {
     
     private func generateResidenceAddress() -> ResidenceAddress {
         // Взаимосвязанные данные по областям
-        let regionsData: [(region: String, city: String, districts: [String], streets: [(type: String, name: String)])] = [
-            (
+        struct RegionData {
+            let region: String
+            let city: String
+            let districts: [String]
+            let streets: [(type: String, name: String)]
+        }
+        
+        let regionsData: [RegionData] = [
+            RegionData(
                 region: "Харківська",
                 city: "Харків",
                 districts: ["Харківський", "Салтівський", "Немишлянський", "Холодногірський"],
@@ -263,7 +270,7 @@ class StaticDataGenerator {
                     (type: "вул.", name: "Полтавський шлях")
                 ]
             ),
-            (
+            RegionData(
                 region: "Київська",
                 city: "Київ",
                 districts: ["Київський", "Печерський", "Шевченківський", "Подільський"],
@@ -276,7 +283,7 @@ class StaticDataGenerator {
                     (type: "бул.", name: "Шевченка")
                 ]
             ),
-            (
+            RegionData(
                 region: "Львівська",
                 city: "Львів",
                 districts: ["Львівський", "Залізничний", "Франківський", "Сихівський"],
@@ -289,7 +296,7 @@ class StaticDataGenerator {
                     (type: "вул.", name: "Городоцька")
                 ]
             ),
-            (
+            RegionData(
                 region: "Дніпропетровська",
                 city: "Дніпро",
                 districts: ["Дніпровський", "Соборний", "Шевченківський", "Центральний"],
@@ -302,7 +309,7 @@ class StaticDataGenerator {
                     (type: "вул.", name: "Набережна Перемоги")
                 ]
             ),
-            (
+            RegionData(
                 region: "Одеська",
                 city: "Одеса",
                 districts: ["Одеський", "Приморський", "Малиновський", "Суворовський"],

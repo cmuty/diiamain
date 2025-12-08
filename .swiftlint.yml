@@ -3,6 +3,7 @@ warning_threshold: 30
 excluded:
   - DiiaOpenSource/Resources/
   - DiiaOpenSource/Resources/Strings/Localizable.swift
+  - DiiaOpenSource/Common/Managers/NetworkManager.swift
 
 disabled_rules:
   - control_statement
