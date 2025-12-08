@@ -9,7 +9,7 @@ workflows:
         XCODE_SCHEME: "DiiaOpenSource"
         BUNDLE_ID: "ua.gov.diia.opensource.app"
         APP_NAME: "DiiaOpenSource"
-      xcode: 15.0
+      xcode: latest
     triggering:
       events:
         - push
