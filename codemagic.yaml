@@ -1,0 +1,95 @@
+workflows:
+  ios-diia-opensource-workflow:
+    name: Diia OpenSource iOS Build
+    max_build_duration: 90
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        XCODE_PROJECT: "DiiaOpenSource.xcodeproj"
+        XCODE_SCHEME: "DiiaOpenSource"
+        BUNDLE_ID: "ua.gov.diia.opensource.app"
+        APP_NAME: "DiiaOpenSource"
+      xcode: 15.0
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: '*'
+          include: true
+    scripts:
+      - name: Resolve Swift Package Manager dependencies
+        script: |
+          set -e
+          set -x
+          cd "$CM_BUILD_DIR"
+          echo "Resolving Swift Package Manager dependencies..."
+          xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT" -scheme "$XCODE_SCHEME"
+      
+      - name: Build Archive
+        script: |
+          set -e
+          set -x
+          cd "$CM_BUILD_DIR"
+          
+          xcodebuild archive \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -archivePath "$HOME/build/DiiaOpenSource.xcarchive" \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            DEVELOPMENT_TEAM="" \
+            CODE_SIGN_STYLE=Manual \
+            SKIP_INSTALL=NO
+      
+      - name: Create IPA
+        script: |
+          set -e
+          set -x
+          cd "$HOME/build"
+          
+          # Создаем директорию для IPA
+          mkdir -p ipa
+          
+          # Проверяем что архив создан
+          echo "Checking archive..."
+          ls -la DiiaOpenSource.xcarchive/Products/Applications/ || true
+          
+          # Создаем структуру для IPA
+          mkdir -p Payload
+          cp -r DiiaOpenSource.xcarchive/Products/Applications/DiiaOpenSource.app Payload/
+          
+          # Проверяем что .app скопировался
+          echo "Checking .app bundle..."
+          ls -la Payload/DiiaOpenSource.app/ || true
+          
+          # Проверяем наличие Assets
+          echo "Checking for Assets in .app bundle..."
+          find Payload/DiiaOpenSource.app -name "Assets.car" -o -name "AppIcon*" || true
+          
+          # Создаем IPA файл
+          zip -r ipa/DiiaOpenSource.ipa Payload
+          
+          # Очищаем временные файлы
+          rm -rf Payload
+          
+          # Показываем размер IPA
+          echo "IPA file created:"
+          ls -lh ipa/DiiaOpenSource.ipa
+    
+    artifacts:
+      - $HOME/build/ipa/*.ipa
+      - $HOME/build/DiiaOpenSource.xcarchive
+    
+    publishing:
+      email:
+        recipients:
+          - nutipovottakvot@gmail.com
+        notify:
+          success: true
+          failure: true
+
