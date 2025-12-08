@@ -14,15 +14,16 @@ protocol StartAuthorizationView: BaseView {
 final class StartAuthorizationViewController: UIViewController, Storyboarded {
     
     // MARK: - Outlets
-    @IBOutlet private weak var loadingView: ContentLoadingView!
-    @IBOutlet private weak var contentView: UIView!
-    @IBOutlet private weak var scrollView: UIScrollView!
+    @IBOutlet private weak var loadingView: ContentLoadingView?
+    @IBOutlet private weak var contentView: UIView?
+    @IBOutlet private weak var scrollView: UIScrollView?
     
     // MARK: - Properties
     var presenter: StartAuthorizationAction!
     
     // UI Elements
     private var backgroundGradientView: AnimatedGradientBackgroundView!
+    private var mainScrollView: UIScrollView!
     private var mainStackView: UIStackView!
     private var usernameTextField: UITextField!
     private var passwordTextField: UITextField!
@@ -64,10 +65,26 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
     }
     
     private func setupUI() {
+        // Создаем свой scrollView, если его нет в storyboard
+        if let existingScrollView = scrollView {
+            self.mainScrollView = existingScrollView
+        } else {
+            self.mainScrollView = UIScrollView()
+            self.mainScrollView.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(self.mainScrollView)
+            NSLayoutConstraint.activate([
+                self.mainScrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                self.mainScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                self.mainScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                self.mainScrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+        }
+        self.mainScrollView.delegate = self
+        
         // Main scroll view content
         let scrollContentView = UIView()
         scrollContentView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.addSubview(scrollContentView)
+        self.mainScrollView.addSubview(scrollContentView)
         
         // Main stack view
         mainStackView = UIStackView()
@@ -132,11 +149,11 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
         
         // Constraints
         NSLayoutConstraint.activate([
-            scrollContentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            scrollContentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            scrollContentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            scrollContentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            scrollContentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            scrollContentView.topAnchor.constraint(equalTo: self.mainScrollView.topAnchor),
+            scrollContentView.leadingAnchor.constraint(equalTo: self.mainScrollView.leadingAnchor),
+            scrollContentView.trailingAnchor.constraint(equalTo: self.mainScrollView.trailingAnchor),
+            scrollContentView.bottomAnchor.constraint(equalTo: self.mainScrollView.bottomAnchor),
+            scrollContentView.widthAnchor.constraint(equalTo: self.mainScrollView.widthAnchor),
             
             mainStackView.topAnchor.constraint(equalTo: scrollContentView.topAnchor, constant: 64),
             mainStackView.leadingAnchor.constraint(equalTo: scrollContentView.leadingAnchor, constant: 24),
@@ -144,8 +161,9 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
             mainStackView.bottomAnchor.constraint(equalTo: scrollContentView.bottomAnchor, constant: -32)
         ])
         
-        // Hide old content
+        // Hide old content if exists
         contentView?.isHidden = true
+        loadingView?.isHidden = true
     }
     
     private func createTextFieldContainer(label: String, placeholder: String, textField: inout UITextField?) -> UIStackView {
@@ -351,8 +369,8 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
 // MARK: - View logic
 extension StartAuthorizationViewController: StartAuthorizationView {
     func setLoadingState(_ state: DiiaUIComponents.LoadingState) {
-        loadingView.setLoadingState(state)
-        scrollView.isHidden = state == .loading
+        loadingView?.setLoadingState(state)
+        mainScrollView?.isHidden = state == .loading
     }
     
     func setAuthMethods(with viewModel: DSListViewModel) {
