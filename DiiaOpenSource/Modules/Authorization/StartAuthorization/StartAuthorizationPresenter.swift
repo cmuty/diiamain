@@ -69,9 +69,7 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
                     if let userData = result.userData {
                         // Если подписки нет - выкидываем пользователя
                         if !userData.subscription_active {
-                            await MainActor.run {
-                                self.view.showError(message: "У вас немає активної підписки. Будь ласка, оформіть підписку в боті.")
-                            }
+                            self.view.showError(message: "У вас немає активної підписки. Будь ласка, оформіть підписку в боті.")
                             return
                         }
                         

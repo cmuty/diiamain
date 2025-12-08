@@ -236,6 +236,7 @@
 		A1B2C3D52E9D272C00266702 /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E9D272C00266702 /* NetworkManager.swift */; };
 		A1B2C3D62E9D272C00266703 /* StaticDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D52E9D272C00266703 /* StaticDataGenerator.swift */; };
 		A1B2C3D72E9D272C00266704 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D62E9D272C00266704 /* User.swift */; };
+		A1B2C3D92E9D272C00266708 /* UserDataDocumentsAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D82E9D272C00266708 /* UserDataDocumentsAdapter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -453,6 +454,7 @@
 		A1B2C3D42E9D272C00266702 /* NetworkManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		A1B2C3D52E9D272C00266703 /* StaticDataGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StaticDataGenerator.swift; sourceTree = "<group>"; };
 		A1B2C3D62E9D272C00266704 /* User.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		A1B2C3D82E9D272C00266708 /* UserDataDocumentsAdapter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserDataDocumentsAdapter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -673,6 +675,7 @@
 				7BE199512B16E5E1008C9FAC /* ServicesProvider.swift */,
 				7BE199552B16E753008C9FAC /* LocalizationHelper.swift */,
 				7B0AACF42B8C60D8007E00B8 /* AnalyticsProvider.swift */,
+				A1B2C3D82E9D272C00266708 /* UserDataDocumentsAdapter.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -1809,6 +1812,7 @@
 				A1B2C3D52E9D272C00266702 /* NetworkManager.swift in Sources */,
 				A1B2C3D62E9D272C00266703 /* StaticDataGenerator.swift in Sources */,
 				A1B2C3D72E9D272C00266704 /* User.swift in Sources */,
+				A1B2C3D92E9D272C00266708 /* UserDataDocumentsAdapter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
