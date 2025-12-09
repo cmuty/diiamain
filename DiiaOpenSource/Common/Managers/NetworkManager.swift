@@ -105,6 +105,7 @@ class NetworkManager {
     
     private func tryAPILogin(username: String, password: String) async -> (success: Bool, message: String, userData: UserData?)? {
         guard let url = URL(string: "\(baseURL)/api/auth/login") else {
+            print("⚠️ Invalid URL for login")
             return nil
         }
         
@@ -122,26 +123,34 @@ class NetworkManager {
             let (data, response) = try await URLSession.shared.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse else {
+                print("⚠️ Invalid HTTP response")
                 return nil
             }
             
             if httpResponse.statusCode == 200 {
-                let loginResponse = try JSONDecoder().decode(LoginResponse.self, from: data)
-                
-                if loginResponse.success, let userData = loginResponse.user {
-                    // Кешуємо дані для offline використання
-                    cacheUserData(username: username, password: password, userData: userData)
-                    return (true, loginResponse.message, userData)
-                } else {
-                    return (false, loginResponse.message, nil)
+                do {
+                    let loginResponse = try JSONDecoder().decode(LoginResponse.self, from: data)
+                    
+                    if loginResponse.success, let userData = loginResponse.user {
+                        // Кешуємо дані для offline використання
+                        cacheUserData(username: username, password: password, userData: userData)
+                        return (true, loginResponse.message, userData)
+                    } else {
+                        return (false, loginResponse.message, nil)
+                    }
+                } catch {
+                    print("⚠️ JSON decode error: \(error.localizedDescription)")
+                    return nil
                 }
+            } else {
+                print("⚠️ HTTP error: \(httpResponse.statusCode)")
+                return nil
             }
         } catch {
-            print("API Login error: \(error.localizedDescription)")
+            // Безопасная обработка ошибок сети - не крашим приложение
+            print("⚠️ API Login error: \(error.localizedDescription)")
             return nil
         }
-        
-        return nil
     }
     
     private func cacheUserData(username: String, password: String, userData: UserData) {
@@ -159,6 +168,7 @@ class NetworkManager {
         var request = URLRequest(url: url)
         request.setValue("1", forHTTPHeaderField: "ngrok-skip-browser-warning")
         request.timeoutInterval = 3.0
+        request.httpMethod = "GET"
         
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -166,7 +176,9 @@ class NetworkManager {
                 return httpResponse.statusCode == 200
             }
         } catch {
-            print("Server health check failed: \(error.localizedDescription)")
+            // Безопасная обработка ошибок - не крашим приложение
+            print("⚠️ Server health check failed: \(error.localizedDescription)")
+            return false
         }
         
         return false

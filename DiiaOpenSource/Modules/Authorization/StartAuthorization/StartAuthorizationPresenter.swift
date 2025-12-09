@@ -31,11 +31,18 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
     }
 
     func viewWillAppear() {
-        // Проверяем статус сервера
+        // Проверяем статус сервера с безопасной обработкой ошибок
         Task {
-            let isServerOnline = await networkManager.checkServerHealth()
-            Task { @MainActor in
-                view.setServerStatus(isServerOnline)
+            do {
+                let isServerOnline = await networkManager.checkServerHealth()
+                await MainActor.run {
+                    view.setServerStatus(isServerOnline)
+                }
+            } catch {
+                // Если произошла ошибка, считаем сервер оффлайн
+                await MainActor.run {
+                    view.setServerStatus(false)
+                }
             }
         }
     }
@@ -51,68 +58,81 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
         view.setLoadingState(.loading)
         
         Task {
-            let result = await networkManager.login(username: username, password: password)
-            
-            Task { @MainActor in
-                isLoading = false
-                view.setLoadingState(.ready)
+            do {
+                let result = await networkManager.login(username: username, password: password)
                 
-                if result.success {
-                    // Проверяем подписку перед авторизацией
-                    if let userData = result.userData {
-                        // Если подписки нет - выкидываем пользователя
-                        if !userData.subscription_active {
-                            self.view.showError(message: "У вас немає активної підписки. Будь ласка, оформіть підписку в боті.")
-                            return
-                        }
-                        
-                        // Сохраняем данные авторизации
-                        authManager.login(username: username, password: password)
-                        
-                        // Обновляем данные пользователя
-                        authManager.updateUserData(
-                            fullName: userData.full_name,
-                            birthDate: userData.birth_date,
-                            userId: userData.id,
-                            subscriptionActive: userData.subscription_active,
-                            subscriptionType: userData.subscription_type,
-                            registeredAt: userData.registered_at
-                        )
-                        
-                        // Сохраняем данные пользователя для использования в документах
-                        UserDefaults.standard.set(userData.full_name, forKey: "documentUserFullName")
-                        UserDefaults.standard.set(userData.birth_date, forKey: "documentUserBirthDate")
-                        
-                        // Создаем User для получения разбитых данных
-                        let user = User(from: authManager)
-                        UserDefaults.standard.set(user.taxId, forKey: "documentUserTaxId")
-                        UserDefaults.standard.set(user.firstName, forKey: "documentUserFirstName")
-                        UserDefaults.standard.set(user.lastName, forKey: "documentUserLastName")
-                        UserDefaults.standard.set(user.patronymic, forKey: "documentUserPatronymic")
-                        
-                        // Загружаем фото пользователя
-                        Task {
-                            if let photoData = await networkManager.downloadUserPhoto(userId: userData.id) {
-                                Task { @MainActor in
-                                    UserDefaults.standard.set(photoData, forKey: "userPhoto")
+                await MainActor.run {
+                    isLoading = false
+                    view.setLoadingState(.ready)
+                    
+                    if result.success {
+                        // Проверяем подписку перед авторизацией
+                        if let userData = result.userData {
+                            // Если подписки нет - выкидываем пользователя
+                            if !userData.subscription_active {
+                                self.view.showError(message: "У вас немає активної підписки. Будь ласка, оформіть підписку в боті.")
+                                return
+                            }
+                            
+                            // Сохраняем данные авторизации
+                            authManager.login(username: username, password: password)
+                            
+                            // Обновляем данные пользователя
+                            authManager.updateUserData(
+                                fullName: userData.full_name,
+                                birthDate: userData.birth_date,
+                                userId: userData.id,
+                                subscriptionActive: userData.subscription_active,
+                                subscriptionType: userData.subscription_type,
+                                registeredAt: userData.registered_at
+                            )
+                            
+                            // Сохраняем данные пользователя для использования в документах
+                            UserDefaults.standard.set(userData.full_name, forKey: "documentUserFullName")
+                            UserDefaults.standard.set(userData.birth_date, forKey: "documentUserBirthDate")
+                            
+                            // Создаем User для получения разбитых данных
+                            let user = User(from: authManager)
+                            UserDefaults.standard.set(user.taxId, forKey: "documentUserTaxId")
+                            UserDefaults.standard.set(user.firstName, forKey: "documentUserFirstName")
+                            UserDefaults.standard.set(user.lastName, forKey: "documentUserLastName")
+                            UserDefaults.standard.set(user.patronymic, forKey: "documentUserPatronymic")
+                            
+                            // Загружаем фото пользователя (не блокируем авторизацию при ошибке)
+                            Task {
+                                do {
+                                    if let photoData = await networkManager.downloadUserPhoto(userId: userData.id) {
+                                        await MainActor.run {
+                                            UserDefaults.standard.set(photoData, forKey: "userPhoto")
+                                        }
+                                    }
+                                } catch {
+                                    print("⚠️ Failed to download photo: \(error.localizedDescription)")
                                 }
                             }
+                            
+                            // Инициализируем генератор данных при первом входе
+                            _ = StaticDataGenerator.shared.getBirthPlace()
+                            _ = StaticDataGenerator.shared.getResidenceAddress()
+                            
+                            // Создаем мок документ с данными пользователя
+                            self.createMockDocument(user: user)
+                            
+                            // Переходим к созданию PIN-кода или сразу в MainTab
+                            self.openMainTab()
+                        } else {
+                            self.view.showError(message: "Помилка отримання даних користувача")
                         }
-                        
-                        // Инициализируем генератор данных при первом входе
-                        _ = StaticDataGenerator.shared.getBirthPlace()
-                        _ = StaticDataGenerator.shared.getResidenceAddress()
-                        
-                        // Создаем мок документ с данными пользователя
-                        self.createMockDocument(user: user)
-                        
-                        // Переходим к созданию PIN-кода или сразу в MainTab
-                        self.openMainTab()
                     } else {
-                        self.view.showError(message: "Помилка отримання даних користувача")
+                        self.view.showError(message: result.message)
                     }
-                } else {
-                    self.view.showError(message: result.message)
+                }
+            } catch {
+                // Безопасная обработка ошибок - не крашим приложение
+                await MainActor.run {
+                    isLoading = false
+                    view.setLoadingState(.ready)
+                    view.showError(message: "Помилка підключення до сервера. Спробуйте пізніше або використайте offline режим.")
                 }
             }
         }
