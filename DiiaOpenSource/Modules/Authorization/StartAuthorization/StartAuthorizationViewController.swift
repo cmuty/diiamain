@@ -93,14 +93,12 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
             return
         }
         scrollView.delegate = self
-        ...
-    }
-        
+
         // Main scroll view content
         let scrollContentView = UIView()
         scrollContentView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(scrollContentView)
-        
+
         // Main stack view
         let stackView = UIStackView()
         stackView.axis = .vertical
@@ -109,14 +107,14 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
         stackView.translatesAutoresizingMaskIntoConstraints = false
         scrollContentView.addSubview(stackView)
         mainStackView = stackView
-        
+
         // Title
         let titleLabel = UILabel()
         titleLabel.text = "Вітаємо в Дія 👋"
         titleLabel.font = UIFont.systemFont(ofSize: 30, weight: .regular)
         titleLabel.textColor = .black
         stackView.addArrangedSubview(titleLabel)
-        
+
         // Username field
         let usernameContainer = createTextFieldContainer(
             label: "Логін",
@@ -124,11 +122,11 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
             textField: &usernameTextField
         )
         stackView.addArrangedSubview(usernameContainer)
-        
+
         // Password field
         let passwordContainer = createPasswordFieldContainer()
         stackView.addArrangedSubview(passwordContainer)
-        
+
         // Forgot password button
         let forgotButton = UIButton(type: .system)
         forgotButton.setTitle("Забули пароль?", for: .normal)
@@ -137,12 +135,12 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
         forgotButton.addTarget(self, action: #selector(forgotPasswordTapped), for: .touchUpInside)
         stackView.addArrangedSubview(forgotButton)
         forgotPasswordButton = forgotButton
-        
+
         // Server status
         let statusView = createServerStatusView()
         stackView.addArrangedSubview(statusView)
         serverStatusStackView = statusView
-        
+
         // Login button
         let loginBtn = UIButton(type: .system)
         loginBtn.setTitle("Увійти", for: .normal)
@@ -155,18 +153,18 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
         loginBtn.heightAnchor.constraint(equalToConstant: 56).isActive = true
         stackView.addArrangedSubview(loginBtn)
         loginButton = loginBtn
-        
+
         // Spacer
         let spacer = UIView()
         spacer.translatesAutoresizingMaskIntoConstraints = false
         spacer.heightAnchor.constraint(equalToConstant: 100).isActive = true
         stackView.addArrangedSubview(spacer)
-        
+
         // Registration section
         let regView = createRegistrationSection()
         stackView.addArrangedSubview(regView)
         registrationStackView = regView
-        
+
         // Constraints
         NSLayoutConstraint.activate([
             scrollContentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
@@ -174,13 +172,13 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
             scrollContentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
             scrollContentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             scrollContentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
-            
+
             stackView.topAnchor.constraint(equalTo: scrollContentView.topAnchor, constant: 64),
             stackView.leadingAnchor.constraint(equalTo: scrollContentView.leadingAnchor, constant: 24),
             stackView.trailingAnchor.constraint(equalTo: scrollContentView.trailingAnchor, constant: -24),
             stackView.bottomAnchor.constraint(equalTo: scrollContentView.bottomAnchor, constant: -32)
         ])
-        
+
         // Hide old content if exists
         contentView?.isHidden = true
         loadingView?.isHidden = true
