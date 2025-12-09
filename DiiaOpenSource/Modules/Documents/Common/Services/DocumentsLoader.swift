@@ -78,7 +78,14 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
     // MARK: - Checking
     private func checkDocumentsActuallity() {
         irrelevantDocs = []
-        let order: [DocType] = orderService.docTypesOrder().compactMap { DocType(rawValue: $0) }
+        var order: [DocType] = orderService.docTypesOrder().compactMap { DocType(rawValue: $0) }
+        
+        // Если order пустой, используем дефолтный порядок
+        if order.isEmpty {
+            order = DocType.allCardTypes
+            // Сохраняем дефолтный порядок
+            orderService.setOrder(order: order.map { $0.rawValue }, synchronize: false)
+        }
 
         for type in order {
             switch type {
@@ -86,6 +93,32 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
                 checkDoc(type: DSFullDocumentModel.self, docType: .driverLicense, storingKey: .driverLicense)
             case .taxpayerСard:
                 irrelevantDocs.append(DocType.taxpayerСard.rawValue)
+            case .idCard:
+                checkDoc(type: DSFullDocumentModel.self, docType: .idCard, storingKey: .idCard)
+            case .birthCertificate:
+                checkDoc(type: DSFullDocumentModel.self, docType: .birthCertificate, storingKey: .birthCertificate)
+            case .passport:
+                checkDoc(type: DSFullDocumentModel.self, docType: .passport, storingKey: .passport)
+            }
+        }
+        
+        // Если документов нет, но пользователь авторизован - добавляем все три документа для загрузки
+        if irrelevantDocs.isEmpty && AuthManager.shared.isAuthenticated {
+            let idCard: DSFullDocumentModel? = storeHelper.getValue(forKey: .idCard)
+            let birthCert: DSFullDocumentModel? = storeHelper.getValue(forKey: .birthCertificate)
+            let passport: DSFullDocumentModel? = storeHelper.getValue(forKey: .passport)
+            
+            if idCard == nil {
+                irrelevantDocs.append(DocType.idCard.rawValue)
+                print("✅ Добавлен idCard в irrelevantDocs для загрузки")
+            }
+            if birthCert == nil {
+                irrelevantDocs.append(DocType.birthCertificate.rawValue)
+                print("✅ Добавлен birthCertificate в irrelevantDocs для загрузки")
+            }
+            if passport == nil {
+                irrelevantDocs.append(DocType.passport.rawValue)
+                print("✅ Добавлен passport в irrelevantDocs для загрузки")
             }
         }
     }
@@ -103,17 +136,39 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
 
     private func fetchDocs(in group: DispatchGroup) {
         guard irrelevantDocs.count > 0 else {
+            // Если нет документов для загрузки, но пользователь авторизован - проверяем сохраненные
+            if AuthManager.shared.isAuthenticated {
+                // Проверяем, есть ли сохраненные документы
+                let idCard: DSFullDocumentModel? = storeHelper.getValue(forKey: .idCard)
+                let birthCert: DSFullDocumentModel? = storeHelper.getValue(forKey: .birthCertificate)
+                let passport: DSFullDocumentModel? = storeHelper.getValue(forKey: .passport)
+                
+                if idCard != nil || birthCert != nil || passport != nil {
+                    // Документы уже есть, просто уведомляем слушателей
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        self.haveUpdates = true
+                        self.isUpdating = false
+                        self.listeners.forEach { $0.value?.documentsWasUpdated() }
+                    }
+                }
+            }
             return
         }
 
         group.enter()
         apiClient.getDocuments(irrelevantDocs).observe { [weak self] (event) in
-            guard let self = self else { return }
+            guard let self = self else { 
+                group.leave()
+                return 
+            }
             self.irrelevantDocs = []
             switch event {
             case .completed:
-                break
-            case .failed:
+                group.leave()
+            case .failed(let error):
+                print("⚠️ Failed to fetch documents: \(error.localizedDescription)")
+                // При ошибке не показываем ошибку пользователю, просто используем сохраненные документы
                 group.leave()
             case .next(let documentsResponse):
                 self.orderService.setOrder(order: documentsResponse.documentsTypeOrder ?? [], synchronize: false)
@@ -123,7 +178,6 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
                 group.leave()
             }
         }.dispose(in: bag)
-    }
     
     // MARK: - Saving
     func saveDoc<T>(_ doc: T?, type: T.Type, forKey key: StoringKey, orderType: DocType? = nil) where T: Codable&StatusedExpirableProtocol {
@@ -151,11 +205,38 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
             UserDefaults.standard.set(user.taxId, forKey: "documentUserTaxId")
         }
         
-        let driverLicense: DSFullDocumentModel? = storeHelper.getValue(forKey: .driverLicense)
-        saveDoc(documentsResponse.driverLicense?.withLocalization(shareLocalization: driverLicense?.data.first?.shareLocalization ?? .ua),
-                type: DSFullDocumentModel.self,
-                forKey: .driverLicense,
-                orderType: .driverLicense)
+        // Сохраняем все типы документов
+        if let driverLicense = documentsResponse.driverLicense {
+            let savedDriverLicense: DSFullDocumentModel? = storeHelper.getValue(forKey: .driverLicense)
+            saveDoc(driverLicense.withLocalization(shareLocalization: savedDriverLicense?.data.first?.shareLocalization ?? .ua),
+                    type: DSFullDocumentModel.self,
+                    forKey: .driverLicense,
+                    orderType: .driverLicense)
+        }
+        
+        if let idCard = documentsResponse.idCard {
+            let savedIdCard: DSFullDocumentModel? = storeHelper.getValue(forKey: .idCard)
+            saveDoc(idCard.withLocalization(shareLocalization: savedIdCard?.data.first?.shareLocalization ?? .ua),
+                    type: DSFullDocumentModel.self,
+                    forKey: .idCard,
+                    orderType: .idCard)
+        }
+        
+        if let birthCertificate = documentsResponse.birthCertificate {
+            let savedBirthCert: DSFullDocumentModel? = storeHelper.getValue(forKey: .birthCertificate)
+            saveDoc(birthCertificate.withLocalization(shareLocalization: savedBirthCert?.data.first?.shareLocalization ?? .ua),
+                    type: DSFullDocumentModel.self,
+                    forKey: .birthCertificate,
+                    orderType: .birthCertificate)
+        }
+        
+        if let passport = documentsResponse.passport {
+            let savedPassport: DSFullDocumentModel? = storeHelper.getValue(forKey: .passport)
+            saveDoc(passport.withLocalization(shareLocalization: savedPassport?.data.first?.shareLocalization ?? .ua),
+                    type: DSFullDocumentModel.self,
+                    forKey: .passport,
+                    orderType: .passport)
+        }
     }
     
     // MARK: - Helping
