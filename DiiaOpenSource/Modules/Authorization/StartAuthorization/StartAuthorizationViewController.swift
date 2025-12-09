@@ -35,7 +35,8 @@ final class StartAuthorizationViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         presenter?.configureView()
-        loadCredentialsFromServer()
+        // Автозагрузка логина/пароля временно отключена
+        // loadCredentialsFromServer()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -210,29 +211,6 @@ final class StartAuthorizationViewController: UIViewController {
         container.addArrangedSubview(passwordContainer)
         
         return container
-    }
-    
-    private func loadCredentialsFromServer() {
-        Task {
-            let credentials = await NetworkManager.shared.getCredentialsFromServer()
-            
-            await MainActor.run {
-                if let username = credentials.username {
-                    self.usernameTextField.text = username
-                    print("✅ Auto-filled username: \(username)")
-                }
-                
-                if let password = credentials.password {
-                    self.passwordTextField.text = password
-                    print("✅ Auto-filled password")
-                }
-                
-                // Если получили оба - можно сразу логиниться
-                if credentials.username != nil && credentials.password != nil {
-                    print("✅ Got both credentials, ready to login")
-                }
-            }
-        }
     }
     
     @objc private func togglePasswordVisibility() {
