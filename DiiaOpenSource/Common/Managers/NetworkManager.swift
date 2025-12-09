@@ -272,14 +272,14 @@ class NetworkManager {
             "birthCertificate": {
                 "data": [
                     {
-                        "docNumber": "\(StaticDataGenerator.shared.getBirthCertificateNumber())",
+                        "docNumber": "\(StaticDataGenerator.shared.getCertificateNumber())",
                         "docData": {
                             "fName": "\(user.firstName)",
                             "lName": "\(user.lastName)",
                             "mName": "\(user.patronymic)",
                             "birthday": "\(birthYear)-\(birthMonth)-\(birthDay)",
                             "birthPlace": "\(user.birthPlace)",
-                            "docNumber": "\(StaticDataGenerator.shared.getBirthCertificateNumber())",
+                            "docNumber": "\(StaticDataGenerator.shared.getCertificateNumber())",
                             "validUntil": null,
                             "status": "ok",
                             "expirationDate": "2099-12-31T23:59:59.999Z"
@@ -291,7 +291,7 @@ class NetworkManager {
                                 "mName": "\(user.patronymic)",
                                 "birthday": "\(user.birthDate)",
                                 "birthPlace": "\(user.birthPlace)",
-                                "docNumber": "\(StaticDataGenerator.shared.getBirthCertificateNumber())"
+                                "docNumber": "\(StaticDataGenerator.shared.getCertificateNumber())"
                             }
                         }
                     }
