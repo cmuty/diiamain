@@ -137,14 +137,10 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
                 completionHandler: { (pincode, view) in
                     // Сохраняем PIN-код через старую систему для совместимости
                     ServicesProvider.shared.authService.setPincode(pincode: pincode)
-                    switch BiometryHelper.biometricType() {
-                    case .none:
-                        AppRouter.instance.open(module: MainTabBarModule(), needPincode: false, asRoot: true)
-                        AppRouter.instance.didFinishStartingWithPincode = true
-                    default:
-                        StoreHelper.instance.save(false, type: Bool.self, forKey: .isBiometryEnabled)
-                        view.open(module: BiometryRequestModule(viewModel: .default(authFlow: .login)))
-                    }
+                    // Пропускаем экран Face ID, сразу переходим в MainTab
+                    StoreHelper.instance.save(false, type: Bool.self, forKey: .isBiometryEnabled)
+                    AppRouter.instance.open(module: MainTabBarModule(), needPincode: false, asRoot: true)
+                    AppRouter.instance.didFinishStartingWithPincode = true
                 }
             )
         )
