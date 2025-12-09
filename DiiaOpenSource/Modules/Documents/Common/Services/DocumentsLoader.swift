@@ -19,7 +19,6 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
     private var isUpdating: Bool = false
     private var haveUpdates: Bool = false
     private var needUpdates: Bool = false
-    private let bag = DisposeBag()
 
     override init() {
         fatalError("init() has not been implemented")
