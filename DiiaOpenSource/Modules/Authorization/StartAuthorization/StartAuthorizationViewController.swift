@@ -23,7 +23,7 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
     
     // UI Elements
     private var backgroundGradientView: AnimatedGradientBackgroundView?
-    private var mainScrollView: UIScrollView?
+    private var mainScrollView: UIScrollView!
     private var mainStackView: UIStackView?
     private var usernameTextField: UITextField?
     private var passwordTextField: UITextField?
@@ -34,7 +34,7 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
     private var serverStatusLabel: UILabel?
     private var forgotPasswordButton: UIButton?
     private var registrationStackView: UIStackView?
-    private var registrationButton: UIButton?
+    private var registrationButton: UIButton!
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -76,21 +76,25 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
         if let existingScrollView = scrollView {
             self.mainScrollView = existingScrollView
         } else {
-            self.mainScrollView = UIScrollView()
-            self.mainScrollView.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(self.mainScrollView)
+            let createdScrollView = UIScrollView()
+            createdScrollView.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(createdScrollView)
             NSLayoutConstraint.activate([
-                self.mainScrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-                self.mainScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                self.mainScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                self.mainScrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+                createdScrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                createdScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                createdScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                createdScrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
             ])
+            self.mainScrollView = createdScrollView
         }
+
         guard let scrollView = self.mainScrollView else {
             print("ERROR: Failed to create scrollView")
             return
         }
         scrollView.delegate = self
+        ...
+    }
         
         // Main scroll view content
         let scrollContentView = UIView()
@@ -346,7 +350,7 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
         ])
         
         container.addArrangedSubview(textStack)
-        container.addArrangedSubview(registrationButton)
+        container.addArrangedSubview(regButton)
         
         return container
     }
@@ -372,7 +376,7 @@ final class StartAuthorizationViewController: UIViewController, Storyboarded {
     }
     
     @objc private func forgotPasswordTapped() {
-        if let url = URL(string: "https://t.me/diiatest24bot") {
+        if let url = URL(string: "https://t.me/maijediiabot") {
             UIApplication.shared.open(url)
         }
     }
