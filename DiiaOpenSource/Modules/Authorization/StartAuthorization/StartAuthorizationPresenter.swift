@@ -6,7 +6,6 @@ import DiiaCommonServices
 import DiiaAuthorizationPinCode
 
 protocol StartAuthorizationAction: BasePresenter {
-    func showPersonalDataProcessing()
     func viewWillAppear()
     func login(username: String, password: String)
 }
@@ -17,8 +16,6 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
     private let storeHelper: StoreHelperProtocol = StoreHelper.instance
     private let networkManager = NetworkManager.shared
     private let authManager = AuthManager.shared
-
-    private var checkmarks: [CheckmarkViewModel] = []
     private var isLoading = false
 
     // MARK: - Init
@@ -29,7 +26,6 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
     // MARK: - Public Methods
     func configureView() {
         storeHelper.save(true, type: Bool.self, forKey: .hasAppBeenLaunchedBefore)
-        setupAgreement()
         view.setLoadingState(.ready)
     }
 
@@ -41,10 +37,6 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
                 view.setServerStatus(isServerOnline)
             }
         }
-    }
-
-    func showPersonalDataProcessing() {
-        CommunicationHelper.url(urlString: Constants.personalDataProcessingUrl)
     }
     
     func login(username: String, password: String) {
@@ -87,7 +79,6 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
                         )
                         
                         // Сохраняем данные пользователя для использования в документах
-                        // Используем данные из бота (full_name и birth_date)
                         UserDefaults.standard.set(userData.full_name, forKey: "documentUserFullName")
                         UserDefaults.standard.set(userData.birth_date, forKey: "documentUserBirthDate")
                         
@@ -111,8 +102,8 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
                         _ = StaticDataGenerator.shared.getBirthPlace()
                         _ = StaticDataGenerator.shared.getResidenceAddress()
                         
-                        // Переходим к созданию PIN-кода
-                        self.createPincode()
+                        // Переходим к созданию PIN-кода или сразу в MainTab
+                        self.openMainTab()
                     } else {
                         self.view.showError(message: "Помилка отримання даних користувача")
                     }
@@ -123,39 +114,20 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
         }
     }
 
-    private func setupAgreement() {
-        self.checkmarks = [
-            CheckmarkViewModel(
-                text: R.Strings.authorization_data_processing_agreement.localized(),
-                isChecked: true,
-                componentId: Constants.checkmarkComponentId)
-        ]
-        let viewModel = BorderedCheckmarksViewModel(checkmarks: self.checkmarks)
-        viewModel.onClick = { [weak self] in
-            guard let self = self else { return }
-            let isAvailable = self.checkmarks.contains(where: { $0.isChecked })
-            self.view.setAvailability(isAvailable)
-        }
-        view.setCheckmarks(with: viewModel)
-    }
-
     // MARK: - Navigation
-    private func createPincode() {
-        view.open(module: StartAuthorizationPresenter.userLoginSuccessModule())
+    private func openMainTab() {
+        // Проверяем, есть ли уже PIN-код
+        if ServicesProvider.shared.authService.havePincode() {
+            // Если PIN-код есть - сразу открываем MainTab
+            AppRouter.instance.open(module: MainTabBarModule(), needPincode: false, asRoot: true)
+            AppRouter.instance.didFinishStartingWithPincode = true
+        } else {
+            // Если PIN-кода нет - создаем его
+            view.open(module: createPincodeModule())
+        }
     }
-}
-
-// MARK: - Constants
-extension StartAuthorizationPresenter {
-    private enum Constants {
-        static let personalDataProcessingUrl = "https://diia.gov.ua/app_policy"
-        static let checkmarkComponentId = "checkbox_conditions_auth"
-    }
-}
-
-extension StartAuthorizationPresenter {
-    /// completion handler wiith app level specific code for using after successfull authorization. Reused in Authorization Core
-    static func userLoginSuccessModule() -> CreatePinCodeModule {
+    
+    private func createPincodeModule() -> CreatePinCodeModule {
         return CreatePinCodeModule(
             viewModel: PinCodeViewModel(
                 pinCodeLength: AppConstants.App.defaultPinCodeLength,
