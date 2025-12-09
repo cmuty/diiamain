@@ -22,6 +22,15 @@ class DocumentsProcessor {
                 return makeMultiple(cards: processDriverLicenses(licenses: driverLicense))
             case .taxpayerСard:
                 return nil
+            case .idCard:
+                let idCard: DSFullDocumentModel? = storeHelper.getValue(forKey: .idCard)
+                return makeMultiple(cards: processGenericDocument(document: idCard, docType: .idCard))
+            case .birthCertificate:
+                let birthCert: DSFullDocumentModel? = storeHelper.getValue(forKey: .birthCertificate)
+                return makeMultiple(cards: processGenericDocument(document: birthCert, docType: .birthCertificate))
+            case .passport:
+                let passport: DSFullDocumentModel? = storeHelper.getValue(forKey: .passport)
+                return makeMultiple(cards: processGenericDocument(document: passport, docType: .passport))
             }
         }
         
@@ -57,6 +66,16 @@ class DocumentsProcessor {
             return DriverLicenseViewModelFactory().createViewModel(model: $0)
         } ?? []
         return reorderIfNeeded(documents: documents, orderIds: DocumentReorderingService.shared.order(for: DocType.driverLicense.rawValue))
+    }
+    
+    // Обработка общих документов (ID-документ, свидетельство о рождении, паспорт)
+    private func processGenericDocument(document: DSFullDocumentModel?, docType: DocType) -> [DocumentModel] {
+        // Для упрощения используем ту же фабрику, что и для водительских прав
+        // В реальном приложении здесь должны быть отдельные фабрики для каждого типа
+        let documents: [DocumentModel] = document?.data.filter({ $0.docData.validUntil == nil }).map {
+            return DriverLicenseViewModelFactory().createViewModel(model: $0)
+        } ?? []
+        return reorderIfNeeded(documents: documents, orderIds: DocumentReorderingService.shared.order(for: docType.rawValue))
     }
 }
 
