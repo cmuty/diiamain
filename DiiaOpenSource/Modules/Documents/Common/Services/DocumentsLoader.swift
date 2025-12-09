@@ -30,6 +30,7 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
         self.storeHelper = storage
         self.apiClient = apiClient
         self.orderService = orderService
+        super.init()
         
         // При инициализации проверяем, есть ли документы, и если нет - создаем их
         DispatchQueue.main.async { [weak self] in
