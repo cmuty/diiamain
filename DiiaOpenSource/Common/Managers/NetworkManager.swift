@@ -198,5 +198,144 @@ class NetworkManager {
             return nil
         }
     }
+    
+    // Создать мок JSON для документов с данными пользователя
+    func createMockDocumentsJSON(user: User) -> String {
+        // Форматируем дату рождения
+        let birthDateParts = user.birthDate.components(separatedBy: ".")
+        let birthYear = birthDateParts.count == 3 ? birthDateParts[2] : "2008"
+        let birthMonth = birthDateParts.count == 3 ? birthDateParts[1] : "01"
+        let birthDay = birthDateParts.count == 3 ? birthDateParts[0] : "07"
+        
+        // Вычисляем даты
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        
+        // ISO8601 формат для expirationDate
+        let isoFormatter = DateFormatter()
+        isoFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        isoFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        
+        // Даты для ID-документа (выдан недавно, действует долго)
+        let idIssueDate = calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date()
+        let idExpiryDate = calendar.date(byAdding: .year, value: 10, to: idIssueDate) ?? Date()
+        let idIssueDateString = formatter.string(from: idIssueDate)
+        let idExpiryDateString = formatter.string(from: idExpiryDate)
+        let idExpirationDateString = isoFormatter.string(from: idExpiryDate)
+        
+        // Даты для паспорта (выдан в 14 лет, действует 8 лет)
+        let passportIssueDate = calendar.date(byAdding: .year, value: -2, to: Date()) ?? Date()
+        let passportExpiryDate = calendar.date(byAdding: .year, value: 8, to: passportIssueDate) ?? Date()
+        let passportIssueDateString = formatter.string(from: passportIssueDate)
+        let passportExpiryDateString = formatter.string(from: passportExpiryDate)
+        let passportExpirationDateString = isoFormatter.string(from: passportExpiryDate)
+        
+        // Номер паспорта
+        let passportNumber = StaticDataGenerator.shared.getPassportNumber()
+        
+        // Создаем мок JSON для всех трех документов
+        let mockJSON = """
+        {
+            "idCard": {
+                "data": [
+                    {
+                        "docNumber": "\(user.taxId)",
+                        "docData": {
+                            "fName": "\(user.firstName)",
+                            "lName": "\(user.lastName)",
+                            "mName": "\(user.patronymic)",
+                            "birthday": "\(birthYear)-\(birthMonth)-\(birthDay)",
+                            "birthPlace": "\(user.birthPlace)",
+                            "docNumber": "\(user.taxId)",
+                            "dateIssue": "\(idIssueDateString)",
+                            "dateExpiry": "\(idExpiryDateString)",
+                            "validUntil": null,
+                            "status": "ok",
+                            "expirationDate": "\(idExpirationDateString)"
+                        },
+                        "shareLocalization": {
+                            "ua": {
+                                "fName": "\(user.firstName)",
+                                "lName": "\(user.lastName)",
+                                "mName": "\(user.patronymic)",
+                                "birthday": "\(user.birthDate)",
+                                "birthPlace": "\(user.birthPlace)",
+                                "docNumber": "\(user.taxId)",
+                                "dateIssue": "\(idIssueDateString)",
+                                "dateExpiry": "\(idExpiryDateString)"
+                            }
+                        }
+                    }
+                ]
+            },
+            "birthCertificate": {
+                "data": [
+                    {
+                        "docNumber": "\(StaticDataGenerator.shared.getBirthCertificateNumber())",
+                        "docData": {
+                            "fName": "\(user.firstName)",
+                            "lName": "\(user.lastName)",
+                            "mName": "\(user.patronymic)",
+                            "birthday": "\(birthYear)-\(birthMonth)-\(birthDay)",
+                            "birthPlace": "\(user.birthPlace)",
+                            "docNumber": "\(StaticDataGenerator.shared.getBirthCertificateNumber())",
+                            "validUntil": null,
+                            "status": "ok",
+                            "expirationDate": "2099-12-31T23:59:59.999Z"
+                        },
+                        "shareLocalization": {
+                            "ua": {
+                                "fName": "\(user.firstName)",
+                                "lName": "\(user.lastName)",
+                                "mName": "\(user.patronymic)",
+                                "birthday": "\(user.birthDate)",
+                                "birthPlace": "\(user.birthPlace)",
+                                "docNumber": "\(StaticDataGenerator.shared.getBirthCertificateNumber())"
+                            }
+                        }
+                    }
+                ]
+            },
+            "passport": {
+                "data": [
+                    {
+                        "docNumber": "\(passportNumber)",
+                        "docData": {
+                            "fName": "\(user.firstName)",
+                            "lName": "\(user.lastName)",
+                            "mName": "\(user.patronymic)",
+                            "birthday": "\(birthYear)-\(birthMonth)-\(birthDay)",
+                            "birthPlace": "\(user.birthPlace)",
+                            "docNumber": "\(passportNumber)",
+                            "dateIssue": "\(passportIssueDateString)",
+                            "dateExpiry": "\(passportExpiryDateString)",
+                            "department": "ДМС України",
+                            "validUntil": null,
+                            "status": "ok",
+                            "expirationDate": "\(passportExpirationDateString)"
+                        },
+                        "shareLocalization": {
+                            "ua": {
+                                "fName": "\(user.firstName)",
+                                "lName": "\(user.lastName)",
+                                "mName": "\(user.patronymic)",
+                                "birthday": "\(user.birthDate)",
+                                "birthPlace": "\(user.birthPlace)",
+                                "docNumber": "\(passportNumber)",
+                                "dateIssue": "\(passportIssueDateString)",
+                                "dateExpiry": "\(passportExpiryDateString)",
+                                "department": "ДМС України"
+                            }
+                        }
+                    }
+                ]
+            },
+            "documentsTypeOrder": ["id-card", "birth-certificate", "passport"]
+        }
+        """
+        
+        return mockJSON
+    }
 }
 

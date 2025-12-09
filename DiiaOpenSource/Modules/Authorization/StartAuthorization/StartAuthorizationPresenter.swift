@@ -4,6 +4,7 @@ import DiiaCommonTypes
 import DiiaUIComponents
 import DiiaCommonServices
 import DiiaAuthorizationPinCode
+import DiiaDocumentsCommonTypes
 
 protocol StartAuthorizationAction: BasePresenter {
     func viewWillAppear()
@@ -102,6 +103,9 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
                         _ = StaticDataGenerator.shared.getBirthPlace()
                         _ = StaticDataGenerator.shared.getResidenceAddress()
                         
+                        // Создаем мок документ с данными пользователя
+                        self.createMockDocument(user: user)
+                        
                         // Переходим к созданию PIN-кода или сразу в MainTab
                         self.openMainTab()
                     } else {
@@ -114,6 +118,48 @@ final class StartAuthorizationPresenter: StartAuthorizationAction {
         }
     }
 
+    // MARK: - Mock Document Creation
+    private func createMockDocument(user: User) {
+        // Создаем мок JSON для всех трех документов
+        let mockJSON = NetworkManager.shared.createMockDocumentsJSON(user: user)
+        
+        guard let jsonData = mockJSON.data(using: .utf8),
+              let mockResponse = try? JSONDecoder().decode(DocumentsResponse.self, from: jsonData) else {
+            print("⚠️ Не удалось создать мок документы")
+            return
+        }
+        
+        let storeHelper = StoreHelper.instance
+        
+        // Сохраняем все три документа
+        if let idCard = mockResponse.idCard {
+            storeHelper.save(idCard, type: DSFullDocumentModel.self, forKey: .idCard)
+            print("✅ Создан ID-документ")
+        }
+        
+        if let birthCert = mockResponse.birthCertificate {
+            storeHelper.save(birthCert, type: DSFullDocumentModel.self, forKey: .birthCertificate)
+            print("✅ Создано свидетельство о рождении")
+        }
+        
+        if let passport = mockResponse.passport {
+            storeHelper.save(passport, type: DSFullDocumentModel.self, forKey: .passport)
+            print("✅ Создан паспорт")
+        }
+        
+        // Устанавливаем порядок документов
+        let orderService = DocumentReorderingService.shared
+        let currentOrder = orderService.docTypesOrder()
+        let expectedOrder = ["id-card", "birth-certificate", "passport"]
+        
+        if currentOrder.isEmpty || Set(currentOrder) != Set(expectedOrder) {
+            orderService.setOrder(order: expectedOrder, synchronize: false)
+            print("✅ Установлен порядок документов: \(expectedOrder.joined(separator: ", "))")
+        }
+        
+        print("✅ Созданы все мок документы для \(user.userFullName)")
+    }
+    
     // MARK: - Navigation
     private func openMainTab() {
         // Проверяем, есть ли уже PIN-код
