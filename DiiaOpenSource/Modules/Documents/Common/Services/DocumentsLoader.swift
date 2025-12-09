@@ -19,6 +19,7 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
     private var isUpdating: Bool = false
     private var haveUpdates: Bool = false
     private var needUpdates: Bool = false
+    private let bag = DisposeBag()
 
     override init() {
         fatalError("init() has not been implemented")
@@ -178,6 +179,7 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
                 group.leave()
             }
         }.dispose(in: bag)
+    }
     
     // MARK: - Saving
     func saveDoc<T>(_ doc: T?, type: T.Type, forKey key: StoringKey, orderType: DocType? = nil) where T: Codable&StatusedExpirableProtocol {
