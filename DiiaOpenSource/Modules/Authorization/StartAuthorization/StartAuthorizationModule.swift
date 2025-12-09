@@ -6,7 +6,7 @@ final class StartAuthorizationModule: BaseModule {
     private let presenter: StartAuthorizationPresenter
     
     init() {
-        view = StartAuthorizationViewController.storyboardInstantiate()
+        view = StartAuthorizationViewController()
         presenter = StartAuthorizationPresenter(view: view)
         view.presenter = presenter
     }
