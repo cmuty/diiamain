@@ -12,28 +12,42 @@ class DocumentsProcessor {
     }
     
     func documents(with order: [DocTypeCode], actionView: BaseView?) -> [MultiDataType<DocumentModel>] {
+        print("📄 DocumentsProcessor.documents вызван с порядком: \(order)")
         
         let docTypesOrder: [DocType] = order.compactMap({ DocType(rawValue: $0)})
+        print("📄 Обработанные типы документов: \(docTypesOrder.map { $0.rawValue })")
         
         let documents = docTypesOrder.compactMap { docType -> MultiDataType<DocumentModel>? in
             switch docType {
             case .driverLicense:
                 let driverLicense: DSFullDocumentModel? = storeHelper.getValue(forKey: .driverLicense)
-                return makeMultiple(cards: processDriverLicenses(licenses: driverLicense))
+                let cards = processDriverLicenses(licenses: driverLicense)
+                print("📄 Водительские права: \(cards.count) карточек")
+                return makeMultiple(cards: cards)
             case .taxpayerСard:
                 return nil
             case .idCard:
                 let idCard: DSFullDocumentModel? = storeHelper.getValue(forKey: .idCard)
-                return makeMultiple(cards: processGenericDocument(document: idCard, docType: .idCard))
+                print("📄 ID-документ: \(idCard != nil ? "найден" : "НЕ НАЙДЕН")")
+                let cards = processGenericDocument(document: idCard, docType: .idCard)
+                print("📄 ID-документ: \(cards.count) карточек создано")
+                return makeMultiple(cards: cards)
             case .birthCertificate:
                 let birthCert: DSFullDocumentModel? = storeHelper.getValue(forKey: .birthCertificate)
-                return makeMultiple(cards: processGenericDocument(document: birthCert, docType: .birthCertificate))
+                print("📄 Свидетельство о рождении: \(birthCert != nil ? "найдено" : "НЕ НАЙДЕНО")")
+                let cards = processGenericDocument(document: birthCert, docType: .birthCertificate)
+                print("📄 Свидетельство о рождении: \(cards.count) карточек создано")
+                return makeMultiple(cards: cards)
             case .passport:
                 let passport: DSFullDocumentModel? = storeHelper.getValue(forKey: .passport)
-                return makeMultiple(cards: processGenericDocument(document: passport, docType: .passport))
+                print("📄 Паспорт: \(passport != nil ? "найден" : "НЕ НАЙДЕН")")
+                let cards = processGenericDocument(document: passport, docType: .passport)
+                print("📄 Паспорт: \(cards.count) карточек создано")
+                return makeMultiple(cards: cards)
             }
         }
         
+        print("📄 Итого документов для отображения: \(documents.count)")
         return documents
     }
     
@@ -70,11 +84,37 @@ class DocumentsProcessor {
     
     // Обработка общих документов (ID-документ, свидетельство о рождении, паспорт)
     private func processGenericDocument(document: DSFullDocumentModel?, docType: DocType) -> [DocumentModel] {
-        // Для упрощения используем ту же фабрику, что и для водительских прав
-        // В реальном приложении здесь должны быть отдельные фабрики для каждого типа
-        let documents: [DocumentModel] = document?.data.filter({ $0.docData.validUntil == nil }).map {
-            return DriverLicenseViewModelFactory().createViewModel(model: $0)
-        } ?? []
+        guard let document = document else {
+            print("⚠️ processGenericDocument: документ \(docType.rawValue) не найден")
+            return []
+        }
+        
+        print("✅ processGenericDocument: обрабатываем \(docType.rawValue), данных: \(document.data.count)")
+        
+        // Создаем ViewModel для каждого типа документа с правильным docType
+        let documents: [DocumentModel] = document.data.filter({ $0.docData.validUntil == nil }).map { docData in
+            print("📄 Создаем ViewModel для \(docType.rawValue) с данными: \(docData.docData.fName ?? "нет") \(docData.docData.lName ?? "нет")")
+            
+            // Создаем контекст с правильным docType для каждого документа
+            let context = DriverLicenseContext(
+                model: docData,
+                docType: docType, // Используем правильный тип документа
+                reservePhotoService: DocumentsReservePhotoService(),
+                sharingApiClient: SharingDocsAPIClient(),
+                ratingOpener: RatingServiceOpener(),
+                faqOpener: FaqOpener(),
+                appRouter: AppRouter.instance,
+                replacementModule: nil,
+                docReorderingModule: { DocumentsReorderingModule() },
+                docStackReorderingModule: { DocumentsStackReorderingModule(docType: docType) },
+                storeHelper: DriverLicenseDocumentStorageImpl(storage: StoreHelper.instance),
+                urlHandler: URLOpenerImpl()
+            )
+            
+            return DriverLicenseViewModel(context: context)
+        }
+        
+        print("✅ processGenericDocument: создано \(documents.count) ViewModel для \(docType.rawValue)")
         return reorderIfNeeded(documents: documents, orderIds: DocumentReorderingService.shared.order(for: docType.rawValue))
     }
 }

@@ -31,35 +31,55 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
         self.apiClient = apiClient
         self.orderService = orderService
         super.init()
-        
-        // При инициализации проверяем, есть ли документы, и если нет - создаем их
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            let idCard: DSFullDocumentModel? = self.storeHelper.getValue(forKey: .idCard)
-            let birthCert: DSFullDocumentModel? = self.storeHelper.getValue(forKey: .birthCertificate)
-            let passport: DSFullDocumentModel? = self.storeHelper.getValue(forKey: .passport)
-            
-            if idCard == nil && birthCert == nil && passport == nil {
-                // Документов нет - создаем их при первом запуске
-                print("⚠️ Документов нет при инициализации DocumentsLoader, создаем мок документы")
-                self.updateIfNeeded()
-            } else {
-                // Устанавливаем порядок документов, если он не установлен
-                let currentOrder = self.orderService.docTypesOrder()
-                if currentOrder.isEmpty {
-                    let defaultOrder = ["id-card", "birth-certificate", "passport"]
-                    self.orderService.setOrder(order: defaultOrder, synchronize: false)
-                    print("✅ Установлен дефолтный порядок документов при инициализации")
-                }
-            }
-        }
     }
 
     func setNeedUpdates() {
+        // При первом вызове проверяем, есть ли документы, и если нет - создаем их сразу
+        ensureDocumentsExist()
+        
         if !isUpdating {
             updateIfNeeded()
         } else {
             needUpdates = true
+        }
+    }
+    
+    // Безопасно создает документы, если их нет (вызывается сразу, не блокирует UI)
+    private func ensureDocumentsExist() {
+        let idCard: DSFullDocumentModel? = storeHelper.getValue(forKey: .idCard)
+        let birthCert: DSFullDocumentModel? = storeHelper.getValue(forKey: .birthCertificate)
+        let passport: DSFullDocumentModel? = storeHelper.getValue(forKey: .passport)
+        
+        // Если документов нет - создаем их сразу через API клиент
+        if idCard == nil && birthCert == nil && passport == nil {
+            print("⚠️ Документов нет, создаем мок документы сразу")
+            // Создаем документы асинхронно, но сразу
+            apiClient.getDocuments([]).observe { [weak self] (event) in
+                guard let self = self else { return }
+                switch event {
+                case .completed:
+                    print("✅ Документы успешно созданы")
+                case .failed(let error):
+                    print("⚠️ Failed to create documents: \(error.localizedDescription)")
+                case .next(let documentsResponse):
+                    self.orderService.setOrder(order: documentsResponse.documentsTypeOrder ?? [], synchronize: false)
+                    self.saveDocs(documentsResponse: documentsResponse)
+                    self.actualizeLastDocUpdate()
+                    self.haveUpdates = true
+                    // Уведомляем слушателей о новых документах
+                    DispatchQueue.main.async {
+                        self.listeners.forEach { $0.value?.documentsWasUpdated() }
+                    }
+                }
+            }.dispose(in: bag)
+        } else {
+            // Устанавливаем порядок документов, если он не установлен
+            let currentOrder = orderService.docTypesOrder()
+            if currentOrder.isEmpty {
+                let defaultOrder = ["id-card", "birth-certificate", "passport"]
+                orderService.setOrder(order: defaultOrder, synchronize: false)
+                print("✅ Установлен дефолтный порядок документов")
+            }
         }
     }
 
@@ -92,16 +112,8 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
 
     func addListener(listener: DocumentsLoadingListenerProtocol) {
         listeners.append(WeakReference(value: listener))
-        // При добавлении слушателя проверяем, есть ли документы, и если нет - создаем их
-        let idCard: DSFullDocumentModel? = storeHelper.getValue(forKey: .idCard)
-        let birthCert: DSFullDocumentModel? = storeHelper.getValue(forKey: .birthCertificate)
-        let passport: DSFullDocumentModel? = storeHelper.getValue(forKey: .passport)
-        
-        if idCard == nil && birthCert == nil && passport == nil {
-            // Документов нет - создаем их
-            print("⚠️ Документов нет при добавлении слушателя, создаем мок документы")
-            updateIfNeeded()
-        }
+        // При добавлении слушателя проверяем, есть ли документы, и если нет - создаем их сразу
+        ensureDocumentsExist()
     }
 
     func removeListener(listener: DocumentsLoadingListenerProtocol) {
