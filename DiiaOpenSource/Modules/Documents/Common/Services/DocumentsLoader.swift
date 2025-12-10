@@ -91,6 +91,9 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
         isUpdating = true
         haveUpdates = false
 
+        // ВАЖНО: Не делаем реальных запросов к серверу - используем только мок данные
+        print("📄 DocumentsLoader.updateIfNeeded - используем только мок данные, без реальных запросов")
+        
         checkDocumentsActuallity()
 
         let group = DispatchGroup()
