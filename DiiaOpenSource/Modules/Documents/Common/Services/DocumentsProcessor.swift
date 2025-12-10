@@ -3,6 +3,7 @@ import DiiaMVPModule
 import DiiaCommonTypes
 import DiiaDocumentsCommonTypes
 import DiiaDocumentsCore
+import DiiaDocuments
 
 class DocumentsProcessor {
     private let storeHelper: StoreHelperProtocol
@@ -119,17 +120,10 @@ class DocumentsProcessor {
                 return nil
             }
             
-            // Проверяем наличие основных полей
-            guard docData.docData.fName != nil || docData.docData.lName != nil else {
-                print("⚠️ Документ \(docType.rawValue) не имеет обязательных полей (fName/lName), пропускаем")
-                return nil
-            }
+            print("📄 Создаем ViewModel для \(docType.rawValue)")
             
-            let fName = docData.docData.fName ?? ""
-            let lName = docData.docData.lName ?? ""
-            print("📄 Создаем ViewModel для \(docType.rawValue) с данными: \(fName) \(lName)")
-            
-            // Безопасно создаем контекст и ViewModel
+            // Используем фабрику для создания ViewModel, но с правильным docType через контекст
+            // Создаем контекст с правильным docType для каждого документа
             let context = DriverLicenseContext(
                 model: docData,
                 docType: docType, // Используем правильный тип документа
