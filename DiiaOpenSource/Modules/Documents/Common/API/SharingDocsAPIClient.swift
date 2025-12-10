@@ -37,19 +37,29 @@ class SharingDocsAPIClient: ApiClient<SharingDocsAPI>, SharingDocsApiClientProto
         print("📄 SharingDocsAPIClient.shareDocument - возвращаем мок данные")
         return Signal { observer in
             // ShareVerificationCodesModel - это Codable, создаем через JSON декодирование
-            let mockJSON = """
-            {
-                "codes": []
-            }
-            """
+            // Используем минимальный валидный JSON
+            let mockJSON = "{\"codes\":[]}"
             
+            // Пытаемся декодировать JSON
             if let jsonData = mockJSON.data(using: .utf8),
                let mockCodes = try? JSONDecoder().decode(ShareVerificationCodesModel.self, from: jsonData) {
                 observer.next(mockCodes)
                 observer.completed()
             } else {
-                // Если не удалось создать через JSON, возвращаем ошибку (но не крашим)
-                observer.failed(.unknown)
+                // Если не удалось декодировать - пробуем создать через пустой JSON
+                // Это предотвратит краш приложения
+                let emptyJSON = "{}"
+                if let emptyData = emptyJSON.data(using: .utf8),
+                   let emptyCodes = try? JSONDecoder().decode(ShareVerificationCodesModel.self, from: emptyData) {
+                    observer.next(emptyCodes)
+                    observer.completed()
+                } else {
+                    // В крайнем случае возвращаем ошибку через super (но не крашим)
+                    // Используем тот же подход, что и в базовом классе
+                    print("⚠️ Не удалось создать ShareVerificationCodesModel")
+                    // Возвращаем ошибку, но не крашим приложение
+                    observer.failed(NetworkError.noInternet)
+                }
             }
             return SimpleDisposable()
         }
