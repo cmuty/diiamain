@@ -234,8 +234,36 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
                 group.leave()
             case .failed(let error):
                 print("⚠️ Failed to fetch documents: \(error.localizedDescription)")
-                // При ошибке не показываем ошибку пользователю, просто используем сохраненные документы
-                group.leave()
+                // При ошибке не крашим приложение - просто используем сохраненные документы или создаем мок
+                // Если документов нет, создаем их через мок API клиент
+                let idCard: DSFullDocumentModel? = self.storeHelper.getValue(forKey: .idCard)
+                let birthCert: DSFullDocumentModel? = self.storeHelper.getValue(forKey: .birthCertificate)
+                let passport: DSFullDocumentModel? = self.storeHelper.getValue(forKey: .passport)
+                
+                if idCard == nil && birthCert == nil && passport == nil {
+                    print("⚠️ Документов нет после ошибки, создаем мок документы")
+                    // Создаем документы через мок API клиент (который не делает реальных запросов)
+                    self.apiClient.getDocuments([]).observe { [weak self] (mockEvent) in
+                        guard let self = self else {
+                            group.leave()
+                            return
+                        }
+                        switch mockEvent {
+                        case .completed:
+                            group.leave()
+                        case .failed:
+                            group.leave()
+                        case .next(let documentsResponse):
+                            self.orderService.setOrder(order: documentsResponse.documentsTypeOrder ?? [], synchronize: false)
+                            self.saveDocs(documentsResponse: documentsResponse)
+                            self.actualizeLastDocUpdate()
+                            self.haveUpdates = true
+                            group.leave()
+                        }
+                    }.dispose(in: self.bag)
+                } else {
+                    group.leave()
+                }
             case .next(let documentsResponse):
                 self.orderService.setOrder(order: documentsResponse.documentsTypeOrder ?? [], synchronize: false)
                 self.saveDocs(documentsResponse: documentsResponse)

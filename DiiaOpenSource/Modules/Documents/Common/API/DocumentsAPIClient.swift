@@ -8,8 +8,18 @@ public protocol DocumentsAPIClientProtocol {
 }
 
 class DocumentsAPIClient: ApiClient<DocumentsAPI>, DocumentsAPIClientProtocol {
+    
+    // Переопределяем инициализатор, чтобы убедиться, что не делаем реальных запросов
+    override init() {
+        super.init()
+        print("✅ DocumentsAPIClient инициализирован - используем только мок данные")
+    }
+    
     func getDocuments(_ types: [DocTypeCode] = []) -> Signal<DocumentsResponse, NetworkError> {
-        // Полностью отвязаны от сервера - всегда возвращаем мок документы
+        // ВАЖНО: Полностью отвязаны от сервера - всегда возвращаем мок документы
+        // НЕ используем super.request() или базовый метод ApiClient
+        print("📄 DocumentsAPIClient.getDocuments вызван - возвращаем мок данные (типы: \(types))")
+        
         return Signal { observer in
             let storeHelper = StoreHelper.instance
             let savedIdCard: DSFullDocumentModel? = storeHelper.getValue(forKey: .idCard)
