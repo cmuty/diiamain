@@ -76,9 +76,22 @@ class DocumentsProcessor {
     }
     
     private func processDriverLicenses(licenses: DSFullDocumentModel?) -> [DocumentModel] {
-        let documents: [DocumentModel] = licenses?.data.filter({ $0.docData.validUntil == nil }).map {
-            return DriverLicenseViewModelFactory().createViewModel(model: $0)
-        } ?? []
+        guard let licenses = licenses, !licenses.data.isEmpty else {
+            print("⚠️ processDriverLicenses: водительские права не найдены или пусты")
+            return []
+        }
+        
+        // Используем compactMap для безопасной обработки
+        let documents: [DocumentModel] = licenses.data.compactMap { docData -> DocumentModel? in
+            guard docData.docData.validUntil == nil else {
+                print("⚠️ Водительские права истекли, пропускаем")
+                return nil
+            }
+            
+            // Безопасно создаем ViewModel
+            return DriverLicenseViewModelFactory().createViewModel(model: docData)
+        }
+        
         return reorderIfNeeded(documents: documents, orderIds: DocumentReorderingService.shared.order(for: DocType.driverLicense.rawValue))
     }
     
@@ -89,13 +102,34 @@ class DocumentsProcessor {
             return []
         }
         
+        // Проверяем, что данные не пустые
+        guard !document.data.isEmpty else {
+            print("⚠️ processGenericDocument: документ \(docType.rawValue) имеет пустой массив data")
+            return []
+        }
+        
         print("✅ processGenericDocument: обрабатываем \(docType.rawValue), данных: \(document.data.count)")
         
         // Создаем ViewModel для каждого типа документа с правильным docType
-        let documents: [DocumentModel] = document.data.filter({ $0.docData.validUntil == nil }).map { docData in
-            print("📄 Создаем ViewModel для \(docType.rawValue) с данными: \(docData.docData.fName ?? "нет") \(docData.docData.lName ?? "нет")")
+        // Используем compactMap для безопасной обработки и фильтрации невалидных документов
+        let documents: [DocumentModel] = document.data.compactMap { docData -> DocumentModel? in
+            // Проверяем, что docData валиден
+            guard docData.docData.validUntil == nil else {
+                print("⚠️ Документ \(docType.rawValue) истек, пропускаем")
+                return nil
+            }
             
-            // Создаем контекст с правильным docType для каждого документа
+            // Проверяем наличие основных полей
+            guard docData.docData.fName != nil || docData.docData.lName != nil else {
+                print("⚠️ Документ \(docType.rawValue) не имеет обязательных полей (fName/lName), пропускаем")
+                return nil
+            }
+            
+            let fName = docData.docData.fName ?? ""
+            let lName = docData.docData.lName ?? ""
+            print("📄 Создаем ViewModel для \(docType.rawValue) с данными: \(fName) \(lName)")
+            
+            // Безопасно создаем контекст и ViewModel
             let context = DriverLicenseContext(
                 model: docData,
                 docType: docType, // Используем правильный тип документа
