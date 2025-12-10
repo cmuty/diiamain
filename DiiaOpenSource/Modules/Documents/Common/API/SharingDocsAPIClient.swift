@@ -17,7 +17,14 @@ class SharingDocsAPIClient: ApiClient<SharingDocsAPI>, SharingDocsApiClientProto
         print("📄 SharingDocsAPIClient.shareDriverLicense - возвращаем мок данные (без контакта с серверами)")
         return Signal { observer in
             // Возвращаем локальный мок ответ без контакта с серверами
-            let mockLink = ShareLinkModel(link: "local://mock-share-link")
+            // ShareLinkModel требует: id, link, barcode, timerText, timerTime
+            let mockLink = ShareLinkModel(
+                id: "mock-id-\(documentId)",
+                link: "local://mock-share-link", // Локальный URL, не контактирует с серверами
+                barcode: nil,
+                timerText: "",
+                timerTime: 0
+            )
             observer.next(mockLink)
             observer.completed()
             return SimpleDisposable()
@@ -28,10 +35,21 @@ class SharingDocsAPIClient: ApiClient<SharingDocsAPI>, SharingDocsApiClientProto
         // НЕ делаем реальных запросов - возвращаем мок данные
         print("📄 SharingDocsAPIClient.shareDocument - возвращаем мок данные")
         return Signal { observer in
-            // Возвращаем пустой мок ответ, чтобы не крашить приложение
-            let mockCodes = ShareVerificationCodesModel(codes: [])
-            observer.next(mockCodes)
-            observer.completed()
+            // ShareVerificationCodesModel - это Codable, создаем через JSON декодирование
+            let mockJSON = """
+            {
+                "codes": []
+            }
+            """
+            
+            if let jsonData = mockJSON.data(using: .utf8),
+               let mockCodes = try? JSONDecoder().decode(ShareVerificationCodesModel.self, from: jsonData) {
+                observer.next(mockCodes)
+                observer.completed()
+            } else {
+                // Если не удалось создать через JSON, возвращаем ошибку (но не крашим)
+                observer.failed(.unknown)
+            }
             return SimpleDisposable()
         }
     }
